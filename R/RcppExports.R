@@ -3,25 +3,34 @@
 
 #' Mean shift clustering
 #'
-#' @title Mean shift clustering
-#' @description
-#' Adaptive mean shift clustering to delineate tree crowns from lidar point clouds
-#' @param pc Point cloud has to be in matrix format with 3-columns representing X, Y and Z and each row representing one point
-#' @param H2CW_fac Factor for the ratio of height to crown width. Determines kernel diameter based on its height above ground.
-#' @param H2CL_fac Factor for the ratio of height to crown length. Determines kernel height based on its height above ground.
-#' @param UniformKernel Boolean to enable the application of a simple uniform kernel without distance weighting (Default False)
-#' @param MaxIter Maximum number of iterations, i.e. steps that the kernel can move for each point. If centroid is not found after all iteration, the last position is assigned as centroid and the processing jumps to the next point
-#' @return data.frame with X, Y and Z coordinates of each point in the point cloud and  X, Y and Z coordinates of the centroid to which the point belongs
+#' Adaptive mean shift clustering to delineate tree crowns from lidar point
+#' clouds.
+#'
+#' @param pc Point cloud data in a three-column matrix where the columns
+#'   represent X, Y and Z coordinates and each row represents one point.
+#' @param CD2TH_fac Numeric scalar. Ratio of crown diameter to tree height.
+#'   Determines kernel diameter based on the height of its center.
+#' @param CH2TH_fac Numeric scalar. Ratio of crown height to tree height.
+#'   Determines kernel height based on the height of its center.
+#' @param MaxIter Integer scalar. Maximum number of iterations, i.e. steps that
+#'   the kernel can move for each point. If no mode is found after
+#'   \code{MaxIter} iterations, the centroid that was calculated last is
+#'   treated as the mode.
+#' @param UniformKernel Boolean scalar. Set to \code{TRUE} in order to turn off
+#'   distance weighting within the kernel (defaults to \code{FALSE}).
+#'
+#' @return A data.frame with the coordinates in \code{pc} and three additional
+#'   columns with the coordinates of the calculated modes.
+#'
 #' @export
-MeanShift_Classical <- function(pc, H2CW_fac, H2CL_fac, UniformKernel = FALSE, MaxIter = 20L) {
-    .Call(`_meanshiftr_MeanShift_Classical`, pc, H2CW_fac, H2CL_fac, UniformKernel, MaxIter)
+MeanShift_Classical <- function(pc, CD2TH_fac, CH2TH_fac, MaxIter = 200L, UniformKernel = FALSE) {
+    .Call(`_meanshiftr_MeanShift_Classical`, pc, CD2TH_fac, CH2TH_fac, MaxIter, UniformKernel)
 }
 
 #' Mean shift clustering using a discrete voxel space
 #'
-#' @title Mean shift clustering using a discrete voxel space
-#' @description
 #' Adaptive mean shift clustering to delineate tree crowns from lidar point clouds. This is a version using 1-m³ voxels instead of exact point coordinates, to speed up processing.
+#'
 #' @param pc Point cloud has to be in matrix format with 3-columns representing X, Y and Z and each row representing one point
 #' @param H2CW_fac Factor for the ratio of height to crown width. Determines kernel diameter based on its height above ground.
 #' @param H2CL_fac Factor for the ratio of height to crown length. Determines kernel height based on its height above ground.
@@ -30,7 +39,9 @@ MeanShift_Classical <- function(pc, H2CW_fac, H2CL_fac, UniformKernel = FALSE, M
 #' @param maxx Maximum X-coordinate
 #' @param maxy Maximum Y-coordinate
 #' @param maxz Maximum Z-coordinate
+#'
 #' @return data.frame with X, Y and Z coordinates of each point in the point cloud and  X, Y and Z coordinates of the centroid to which the point belongs
+#'
 #' @export
 MeanShift_Voxels <- function(pc, H2CW_fac, H2CL_fac, UniformKernel = FALSE, MaxIter = 20L, maxx = 100L, maxy = 100L, maxz = 60L) {
     .Call(`_meanshiftr_MeanShift_Voxels`, pc, H2CW_fac, H2CL_fac, UniformKernel, MaxIter, maxx, maxy, maxz)

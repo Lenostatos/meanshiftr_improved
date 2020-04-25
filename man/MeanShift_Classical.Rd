@@ -6,29 +6,35 @@
 \usage{
 MeanShift_Classical(
   pc,
-  H2CW_fac,
-  H2CL_fac,
-  UniformKernel = FALSE,
-  MaxIter = 20L
+  CD2TH_fac,
+  CH2TH_fac,
+  MaxIter = 200L,
+  UniformKernel = FALSE
 )
 }
 \arguments{
-\item{pc}{Point cloud has to be in matrix format with 3-columns representing X, Y and Z and each row representing one point}
+\item{pc}{Point cloud data in a three-column matrix where the columns
+represent X, Y and Z coordinates and each row represents one point.}
 
-\item{H2CW_fac}{Factor for the ratio of height to crown width. Determines kernel diameter based on its height above ground.}
+\item{CD2TH_fac}{Numeric scalar. Ratio of crown diameter to tree height.
+Determines kernel diameter based on the height of its center.}
 
-\item{H2CL_fac}{Factor for the ratio of height to crown length. Determines kernel height based on its height above ground.}
+\item{CH2TH_fac}{Numeric scalar. Ratio of crown height to tree height.
+Determines kernel height based on the height of its center.}
 
-\item{UniformKernel}{Boolean to enable the application of a simple uniform kernel without distance weighting (Default False)}
+\item{MaxIter}{Integer scalar. Maximum number of iterations, i.e. steps that
+the kernel can move for each point. If no mode is found after
+\code{MaxIter} iterations, the centroid that was calculated last is
+treated as the mode.}
 
-\item{MaxIter}{Maximum number of iterations, i.e. steps that the kernel can move for each point. If centroid is not found after all iteration, the last position is assigned as centroid and the processing jumps to the next point}
+\item{UniformKernel}{Boolean scalar. Set to \code{TRUE} in order to turn off
+distance weighting within the kernel (defaults to \code{FALSE}).}
 }
 \value{
-data.frame with X, Y and Z coordinates of each point in the point cloud and  X, Y and Z coordinates of the centroid to which the point belongs
+A data.frame with the coordinates in \code{pc} and three additional
+columns with the coordinates of the calculated modes.
 }
 \description{
-Adaptive mean shift clustering to delineate tree crowns from lidar point clouds
-}
-\details{
-Mean shift clustering
+Adaptive mean shift clustering to delineate tree crowns from lidar point
+clouds.
 }

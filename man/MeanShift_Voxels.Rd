@@ -38,6 +38,3 @@ data.frame with X, Y and Z coordinates of each point in the point cloud and  X, 
 \description{
 Adaptive mean shift clustering to delineate tree crowns from lidar point clouds. This is a version using 1-m³ voxels instead of exact point coordinates, to speed up processing.
 }
-\details{
-Mean shift clustering using a discrete voxel space
-}

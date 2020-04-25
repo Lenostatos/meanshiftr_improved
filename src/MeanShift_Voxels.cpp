@@ -7,9 +7,8 @@ using namespace std;
 
 //' Mean shift clustering using a discrete voxel space
 //'
-//' @title Mean shift clustering using a discrete voxel space
-//' @description
 //' Adaptive mean shift clustering to delineate tree crowns from lidar point clouds. This is a version using 1-m³ voxels instead of exact point coordinates, to speed up processing.
+//'
 //' @param pc Point cloud has to be in matrix format with 3-columns representing X, Y and Z and each row representing one point
 //' @param H2CW_fac Factor for the ratio of height to crown width. Determines kernel diameter based on its height above ground.
 //' @param H2CL_fac Factor for the ratio of height to crown length. Determines kernel height based on its height above ground.
@@ -18,7 +17,9 @@ using namespace std;
 //' @param maxx Maximum X-coordinate
 //' @param maxy Maximum Y-coordinate
 //' @param maxz Maximum Z-coordinate
+//'
 //' @return data.frame with X, Y and Z coordinates of each point in the point cloud and  X, Y and Z coordinates of the centroid to which the point belongs
+//'
 //' @export
 // [[Rcpp::export]]
 DataFrame MeanShift_Voxels(NumericMatrix pc, double H2CW_fac, double H2CL_fac, bool UniformKernel=false, int MaxIter=20, int maxx=100, int maxy=100, int maxz=60){
@@ -190,7 +191,3 @@ DataFrame MeanShift_Voxels(NumericMatrix pc, double H2CW_fac, double H2CL_fac, b
 
   return DataFrame::create(_["X"]= pc(_,0),_["Y"]= pc(_,1),_["Z"]= pc(_,2),_["CtrX"]= centroidx,_["CtrY"]= centroidy,_["CtrZ"]= centroidz);
 }
-
-
-
-

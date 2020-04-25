@@ -6,17 +6,17 @@
 using namespace Rcpp;
 
 // MeanShift_Classical
-DataFrame MeanShift_Classical(NumericMatrix pc, double H2CW_fac, double H2CL_fac, bool UniformKernel, int MaxIter);
-RcppExport SEXP _meanshiftr_MeanShift_Classical(SEXP pcSEXP, SEXP H2CW_facSEXP, SEXP H2CL_facSEXP, SEXP UniformKernelSEXP, SEXP MaxIterSEXP) {
+DataFrame MeanShift_Classical(NumericMatrix pc, double CD2TH_fac, double CH2TH_fac, int MaxIter, bool UniformKernel);
+RcppExport SEXP _meanshiftr_MeanShift_Classical(SEXP pcSEXP, SEXP CD2TH_facSEXP, SEXP CH2TH_facSEXP, SEXP MaxIterSEXP, SEXP UniformKernelSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericMatrix >::type pc(pcSEXP);
-    Rcpp::traits::input_parameter< double >::type H2CW_fac(H2CW_facSEXP);
-    Rcpp::traits::input_parameter< double >::type H2CL_fac(H2CL_facSEXP);
-    Rcpp::traits::input_parameter< bool >::type UniformKernel(UniformKernelSEXP);
+    Rcpp::traits::input_parameter< double >::type CD2TH_fac(CD2TH_facSEXP);
+    Rcpp::traits::input_parameter< double >::type CH2TH_fac(CH2TH_facSEXP);
     Rcpp::traits::input_parameter< int >::type MaxIter(MaxIterSEXP);
-    rcpp_result_gen = Rcpp::wrap(MeanShift_Classical(pc, H2CW_fac, H2CL_fac, UniformKernel, MaxIter));
+    Rcpp::traits::input_parameter< bool >::type UniformKernel(UniformKernelSEXP);
+    rcpp_result_gen = Rcpp::wrap(MeanShift_Classical(pc, CD2TH_fac, CH2TH_fac, MaxIter, UniformKernel));
     return rcpp_result_gen;
 END_RCPP
 }
