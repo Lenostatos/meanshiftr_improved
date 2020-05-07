@@ -1,0 +1,6 @@
+^renv$
+^renv\.lock$
+^meanshiftr\.Rproj$
+^\.Rproj\.user$
+^LICENSE\.md$
+^package_development_code\.R$
