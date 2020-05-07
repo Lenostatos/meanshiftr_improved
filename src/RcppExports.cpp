@@ -5,21 +5,6 @@
 
 using namespace Rcpp;
 
-// MeanShift_Classical
-DataFrame MeanShift_Classical(NumericMatrix pc, double CD2TH_fac, double CH2TH_fac, int MaxIter, bool UniformKernel);
-RcppExport SEXP _meanshiftr_MeanShift_Classical(SEXP pcSEXP, SEXP CD2TH_facSEXP, SEXP CH2TH_facSEXP, SEXP MaxIterSEXP, SEXP UniformKernelSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type pc(pcSEXP);
-    Rcpp::traits::input_parameter< double >::type CD2TH_fac(CD2TH_facSEXP);
-    Rcpp::traits::input_parameter< double >::type CH2TH_fac(CH2TH_facSEXP);
-    Rcpp::traits::input_parameter< int >::type MaxIter(MaxIterSEXP);
-    Rcpp::traits::input_parameter< bool >::type UniformKernel(UniformKernelSEXP);
-    rcpp_result_gen = Rcpp::wrap(MeanShift_Classical(pc, CD2TH_fac, CH2TH_fac, MaxIter, UniformKernel));
-    return rcpp_result_gen;
-END_RCPP
-}
 // MeanShift_Voxels
 DataFrame MeanShift_Voxels(NumericMatrix pc, double H2CW_fac, double H2CL_fac, bool UniformKernel, int MaxIter, int maxx, int maxy, int maxz);
 RcppExport SEXP _meanshiftr_MeanShift_Voxels(SEXP pcSEXP, SEXP H2CW_facSEXP, SEXP H2CL_facSEXP, SEXP UniformKernelSEXP, SEXP MaxIterSEXP, SEXP maxxSEXP, SEXP maxySEXP, SEXP maxzSEXP) {
@@ -38,10 +23,39 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// meanShiftClassic
+DataFrame meanShiftClassic(NumericMatrix pointCloud, double crownDiameter2TreeHeight, double crownHeight2TreeHeight, int maxNumCentroidsPerMode);
+RcppExport SEXP _meanshiftr_meanShiftClassic(SEXP pointCloudSEXP, SEXP crownDiameter2TreeHeightSEXP, SEXP crownHeight2TreeHeightSEXP, SEXP maxNumCentroidsPerModeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type pointCloud(pointCloudSEXP);
+    Rcpp::traits::input_parameter< double >::type crownDiameter2TreeHeight(crownDiameter2TreeHeightSEXP);
+    Rcpp::traits::input_parameter< double >::type crownHeight2TreeHeight(crownHeight2TreeHeightSEXP);
+    Rcpp::traits::input_parameter< int >::type maxNumCentroidsPerMode(maxNumCentroidsPerModeSEXP);
+    rcpp_result_gen = Rcpp::wrap(meanShiftClassic(pointCloud, crownDiameter2TreeHeight, crownHeight2TreeHeight, maxNumCentroidsPerMode));
+    return rcpp_result_gen;
+END_RCPP
+}
+// meanShiftClassicImproved
+Rcpp::DataFrame meanShiftClassicImproved(Rcpp::NumericMatrix pointCloud, double crownDiameter2TreeHeight, double crownHeight2TreeHeight, int maxNumCentroidsPerMode);
+RcppExport SEXP _meanshiftr_meanShiftClassicImproved(SEXP pointCloudSEXP, SEXP crownDiameter2TreeHeightSEXP, SEXP crownHeight2TreeHeightSEXP, SEXP maxNumCentroidsPerModeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type pointCloud(pointCloudSEXP);
+    Rcpp::traits::input_parameter< double >::type crownDiameter2TreeHeight(crownDiameter2TreeHeightSEXP);
+    Rcpp::traits::input_parameter< double >::type crownHeight2TreeHeight(crownHeight2TreeHeightSEXP);
+    Rcpp::traits::input_parameter< int >::type maxNumCentroidsPerMode(maxNumCentroidsPerModeSEXP);
+    rcpp_result_gen = Rcpp::wrap(meanShiftClassicImproved(pointCloud, crownDiameter2TreeHeight, crownHeight2TreeHeight, maxNumCentroidsPerMode));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_meanshiftr_MeanShift_Classical", (DL_FUNC) &_meanshiftr_MeanShift_Classical, 5},
     {"_meanshiftr_MeanShift_Voxels", (DL_FUNC) &_meanshiftr_MeanShift_Voxels, 8},
+    {"_meanshiftr_meanShiftClassic", (DL_FUNC) &_meanshiftr_meanShiftClassic, 4},
+    {"_meanshiftr_meanShiftClassicImproved", (DL_FUNC) &_meanshiftr_meanShiftClassicImproved, 4},
     {NULL, NULL, 0}
 };
 
