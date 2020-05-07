@@ -29,3 +29,20 @@ usethis::use_rcpp()
 usethis::use_r(name = "meanshiftr-package.R")
 # The following stackoverflow post provides valuable info on the Makevars file:
 # https://stackoverflow.com/questions/43597632/understanding-the-contents-of-the-makevars-file-in-r-macros-variables-r-ma
+
+usethis::use_r("parallel_mean_shift")
+
+install.packages("data.table")
+usethis::use_package("data.table")
+install.packages("plyr")
+usethis::use_package("plyr")
+usethis::use_package("parallel")
+install.packages("pbapply")
+usethis::use_package("pbapply")
+install.packages("dbscan")
+usethis::use_package("dbscan")
+
+install.packages("lidR")
+usethis::use_package("lidR", type = "Suggests")
+install.packages("RColorBrewer")
+usethis::use_package("RColorBrewer", type = "Suggests")
