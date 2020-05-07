@@ -24,24 +24,28 @@
 #'   that the kernel can move for each point. If centroid is not found after all
 #'   iteration, the last position is assigned as centroid and the processing
 #'   jumps to the next point
+#' @param min_num_neighbors_per_core Integer Scalar. The minimum number of
+#'   neighbors that a point needs to have in order to be considered as a core
+#'   point by the DBSCAN clustering algorithm.
+#' @param neighborhood_radius Numeric Scalar. The radius of the space around a
+#'   point that is treated as the point's neighborhood.
 #' @param buffer_width Width of the buffer around the core area in meters.
 #' @param min_height Minimum height above ground for a point to be considered in
 #'   the analysis. Has to be > 0.
-#' @param mode_rounding Numeric Scalar. Specifies the rounding accuracy for mode
-#'   positions. After rounding all modes with the same coordinates are
-#'   considered to belong to one tree crown.
 #'
 #' @return data.table of point cloud with points labelled with tree IDs
 #'
 #' @export
-parallel_mean_shift <- function(point_clouds,
-                                used_fraction_of_cores = 0.5,
-                                version = "classic",
-                                crown_diameter_2_tree_height,
-                                crown_height_2_tree_height,
-                                max_num_centroids_per_mode = 200,
-                                buffer_width = 10,
-                                min_height = 2, mode_rounding = 2) {
+segment_tree_crowns_parallel <- function(point_clouds,
+                                         used_fraction_of_cores = 0.5,
+                                         version = "classic",
+                                         crown_diameter_2_tree_height,
+                                         crown_height_2_tree_height,
+                                         max_num_centroids_per_mode = 200,
+                                         min_num_neighbors_per_core,
+                                         neighborhood_radius,
+                                         buffer_width = 10,
+                                         min_height = 2) {
 
   # Calculate the number of cores
   num_cores <- parallel::detectCores()
@@ -56,8 +60,7 @@ parallel_mean_shift <- function(point_clouds,
     varlist = c(
       "version",
       "crown_diameter_2_tree_height", "crown_height_2_tree_height",
-      "max_num_centroids_per_mode", "buffer_width",
-      "min_height", "mode_rounding"
+      "max_num_centroids_per_mode", "buffer_width", "min_height"
     ),
     envir = environment()
   )
@@ -74,8 +77,6 @@ parallel_mean_shift <- function(point_clouds,
     max_x <- ceiling(max(buffered_point_cloud$X))
     min_y <- floor(min(buffered_point_cloud$Y))
     max_y <- ceiling(max(buffered_point_cloud$Y))
-    range_x <- max_x - min_x
-    range_y <- max_y - min_y
 
     # Get margins of the core area
     core_min_x <- floor(min(buffered_point_cloud[Buffer == 0, X]))
@@ -83,32 +84,30 @@ parallel_mean_shift <- function(point_clouds,
     core_min_y <- floor(min(buffered_point_cloud[Buffer == 0, Y]))
     core_max_y <- ceiling(max(buffered_point_cloud[Buffer == 0, Y]))
 
-    # Shift to coordinate origin
-    buffered_point_cloud[, X := X - min_x]
-    buffered_point_cloud[, Y := Y - min_y]
-
     # Convert to 3-column matrix
     point_cloud_matrix <- as.matrix(buffered_point_cloud)
     point_cloud_matrix <- point_cloud_matrix[, 1:3]
 
     # Run the requested version of the mean shift algorithm
     if (version == "classic") {
-      clustered_point_cloud <- meanShiftClassic(
+      modes <- meanShiftClassic(
         pointCloud = point_cloud_matrix,
         crownDiameter2TreeHeight = crown_diameter_2_tree_height,
         crownHeight2TreeHeight = crown_height_2_tree_height,
         maxNumCentroidsPerMode = max_num_centroids_per_mode
       )
     } else if (version == "voxel") {
-      clustered_point_cloud <- MeanShift_Voxels(
+      range_x <- max_x - min_x
+      range_y <- max_y - min_y
+      modes <- MeanShift_Voxels(
         pc = point_cloud_matrix,
         H2CW_fac = crown_diameter_2_tree_height,
         H2CL_fac = crown_height_2_tree_height,
         UniformKernel = FALSE, MaxIter = max_num_centroids_per_mode,
-        maxx = range_x, maxy = range_y, maxz = my.maxz
+        maxx = range_x, maxy = range_y, maxz = max_z
       )
-    } else if (version == "classic improved") {
-      clustered_point_cloud <- meanShiftClassicImproved(
+    } else if (version == "improved") {
+      modes <- meanShiftClassicImproved(
         pointCloud = point_cloud_matrix,
         crownDiameter2TreeHeight = crown_diameter_2_tree_height,
         crownHeight2TreeHeight = crown_height_2_tree_height,
@@ -116,41 +115,59 @@ parallel_mean_shift <- function(point_clouds,
       )
     }
 
-    # Round the centroid coordinates
-    clustered_point_cloud_data_table <-
-      data.table::data.table(clustered_point_cloud)
-    clustered_point_cloud_data_table[
-      , rounded_mode_X := plyr::round_any(modeX, accuracy = mode_rounding)
-    ]
-    clustered_point_cloud_data_table[
-      , rounded_mode_Y := plyr::round_any(modeY, accuracy = mode_rounding)
-    ]
-    clustered_point_cloud_data_table[
-      , rounded_mode_Z := plyr::round_any(modeZ, accuracy = mode_rounding)
+    modes_data_table <-
+      data.table::data.table(modes)
+
+    # Identify mode clusters with the DBSCAN algorithm
+    crown_ids <- dbscan::dbscan(
+      modes_data_table[, .(modeX, modeY, modeZ)],
+      eps = neighborhood_radius, minPts = min_num_neighbors_per_core + 1
+    )$cluster
+
+    modes_data_table <- data.table::data.table(
+      modes_data_table, "crown_id" = crown_ids
+    )
+
+    # Extract all modes that were not part of a cluster
+    unclustered_modes <- modes_data_table[crown_id == 0]
+    modes_data_table <- modes_data_table[crown_id != 0]
+
+    # Keep all unclustered modes that are within the core area
+    unclustered_core_modes <- unclustered_modes[
+        core_min_x <= modeX & modeX <= core_max_x
+      & core_min_y <= modeY & modeY <= core_max_y
     ]
 
-    # Shift back to original positions
-    clustered_point_cloud_data_table[, X := X + min_x]
-    clustered_point_cloud_data_table[, Y := Y + min_y]
-    clustered_point_cloud_data_table[, modeX := modeX + min_x]
-    clustered_point_cloud_data_table[, modeY := modeY + min_y]
-    clustered_point_cloud_data_table[
-      , rounded_mode_X := rounded_mode_X + min_x
+    # Get the mean position of every cluster
+    cluster_means <- modes_data_table[
+      , lapply(.SD, mean),
+      by = crown_id,
+      .SDcols = c("modeX", "modeY")
     ]
-    clustered_point_cloud_data_table[
-      , rounded_mode_Y := rounded_mode_Y + min_y
+    data.table::setnames(
+      cluster_means,
+      old = c("modeX", "modeY"),
+      new = c("mean_cluster_x", "mean_cluster_y")
+    )
+    modes_data_table <-
+      merge(modes_data_table, cluster_means, by = "crown_id")
+
+    # Only keep points whose cluster's mean position lies inside the core area
+    core_cluster_data_table <- modes_data_table[
+        core_min_x <= mean_cluster_x & mean_cluster_x <= core_max_x
+      & core_min_y <= mean_cluster_y & mean_cluster_y <= core_max_y
     ]
 
-    # Subset tree clusters with centers inside the core area of the
-    # focal subplot and discard the clusters with centers in the buffer area
-    clustered_point_cloud_data_table <- subset(
-      clustered_point_cloud_data_table,
-      rounded_mode_X >= core_min_x & rounded_mode_X < core_max_x
-      & rounded_mode_Y >= core_min_y & rounded_mode_Y < core_max_y
+    segmented_point_cloud <- data.table::rbindlist(
+      list(
+        core_cluster_data_table[, -c("mean_cluster_x", "mean_cluster_y")],
+        unclustered_core_modes
+      ),
+      use.names = TRUE
     )
 
     # Collect the clustered point cloud in the results list
-    return(clustered_point_cloud_data_table)
+    return(segmented_point_cloud)
   }
 
   # Apply the mean shift wrapper function in parallel using pblapply to display
@@ -159,16 +176,51 @@ parallel_mean_shift <- function(point_clouds,
     cl = my_cluster, X = point_clouds, FUN = mean_shift_buffered
   )
 
-  # Bind all point clouds from the list in one large data.table
+  parallel::stopCluster(my_cluster)
+
+  # Treat unclustered modes separately
+  unclustered_points <- data.table::rbindlist(lapply(
+    res_list,
+    FUN = function(segmented_point_cloud) {
+      segmented_point_cloud[crown_id == 0]
+    }
+  ))
+
+  # Remove unclustered points from the main data set
+  for (i in seq_along(res_list)) {
+    res_list[[i]] <- res_list[[i]][crown_id != 0]
+  }
+
+  # Ensure that crown IDs don't overlap between clusters from different threads
+  crown_id_increment <- 0
+  for (i in seq_along(res_list)) {
+    res_list[[i]][, crown_id := crown_id + crown_id_increment]
+    crown_id_increment <- 1 + max(res_list[[i]]$crown_id)
+  }
+
+  # Put all clustered points into one data table
   res_data_table <- data.table::rbindlist(res_list)
 
-  # Assign IDs to each cluster based on the rounded coordinates
-  res_data_table[
-    , ID := .GRP,
-    by = .(rounded_mode_X, rounded_mode_Y, rounded_mode_Z)
-  ]
-
-  parallel::stopCluster(my_cluster)
+  # Add all unclustered points with crown ID 0
+  res_data_table <- rbind(res_data_table, unclustered_points)
 
   return(res_data_table)
 }
+
+
+# Clusters for interactive testing
+# set.seed(665544)
+# n <- 1000
+# modes_data_table <- data.table::data.table(
+#   modeX = runif(10, 0, 10) + rnorm(n, sd = 0.2),
+#   modeY = runif(10, 0, 10) + rnorm(n, sd = 0.2),
+#   modeZ = runif(10, 0, 10) + rnorm(n, sd = 0.2)
+# )
+#
+# res_list <-
+#   list(data.table::copy(modes_data_table),
+#        data.table::copy(modes_data_table),
+#        data.table::copy(modes_data_table)
+#   )
+#
+# hist(res_list[[3]]$crown_id)
